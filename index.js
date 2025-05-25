@@ -6,21 +6,21 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/views/index.html");
-});
+const users = [];
+const exercises = {};
 
-// Penyimpanan data sementara
-let users = [];
-let exercises = {};
-
-// Generate ID sederhana
 function generateId() {
   return Math.random().toString(36).substring(2, 9);
 }
 
-// POST /api/users → Buat user baru
+// Serve HTML
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/views/index.html");
+});
+
+// Create new user
 app.post("/api/users", (req, res) => {
   const username = req.body.username;
   const newUser = {
@@ -32,12 +32,12 @@ app.post("/api/users", (req, res) => {
   res.json(newUser);
 });
 
-// GET /api/users → Ambil semua user
+// Get all users
 app.get("/api/users", (req, res) => {
   res.json(users);
 });
 
-// POST /api/users/:_id/exercises → Tambah latihan
+// Add exercise to user
 app.post("/api/users/:_id/exercises", (req, res) => {
   const userId = req.params._id;
   const { description, duration, date } = req.body;
@@ -50,7 +50,7 @@ app.post("/api/users/:_id/exercises", (req, res) => {
   const exercise = {
     description,
     duration: parseInt(duration),
-    date: exerciseDate, // Simpan sebagai Date object
+    date: exerciseDate.toDateString(), // format string!
   };
 
   exercises[userId].push(exercise);
@@ -59,12 +59,12 @@ app.post("/api/users/:_id/exercises", (req, res) => {
     username: user.username,
     description: exercise.description,
     duration: exercise.duration,
-    date: exercise.date.toDateString(), // Format saat response
+    date: exercise.date,
     _id: user._id,
   });
 });
 
-// GET /api/users/:_id/logs → Ambil log latihan user
+// Get exercise log
 app.get("/api/users/:_id/logs", (req, res) => {
   const userId = req.params._id;
   const user = users.find((u) => u._id === userId);
@@ -88,11 +88,11 @@ app.get("/api/users/:_id/logs", (req, res) => {
     log = log.slice(0, parseInt(limit));
   }
 
-  // Pastikan setiap date dalam log adalah string dengan format .toDateString()
   const cleanLog = log.map((ex) => ({
     description: ex.description,
     duration: ex.duration,
-    date: new Date(ex.date).toDateString(),
+    date:
+      typeof ex.date === "string" ? ex.date : new Date(ex.date).toDateString(),
   }));
 
   res.json({
@@ -103,8 +103,6 @@ app.get("/api/users/:_id/logs", (req, res) => {
   });
 });
 
-// Start server
-const listener = app.listen(process.env.PORT || 3003, () => {
+const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
 });
-// Export app for testing
