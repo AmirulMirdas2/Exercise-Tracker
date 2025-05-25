@@ -45,8 +45,7 @@ app.post(
     const exercise = {
       description,
       duration: parseInt(duration),
-      date: exerciseDate.toDateString(), // Tetap menggunakan toDateString() untuk output
-      dateForFilter: exerciseDate, // Simpan Date object untuk filtering
+      date: exerciseDate.toDateString(), // Pastikan ini string dengan format toDateString()
     };
 
     exercises[userId].push(exercise);
@@ -74,8 +73,7 @@ app.get("/api/users/:_id/logs", (req, res) => {
   if (from) {
     const fromDate = new Date(from);
     log = log.filter((ex) => {
-      // Gunakan dateForFilter (Date object) atau parse ulang dengan cara yang aman
-      const exerciseDate = ex.dateForFilter || new Date(ex.date);
+      const exerciseDate = new Date(ex.date);
       return exerciseDate >= fromDate;
     });
   }
@@ -83,7 +81,7 @@ app.get("/api/users/:_id/logs", (req, res) => {
   if (to) {
     const toDate = new Date(to);
     log = log.filter((ex) => {
-      const exerciseDate = ex.dateForFilter || new Date(ex.date);
+      const exerciseDate = new Date(ex.date);
       return exerciseDate <= toDate;
     });
   }
@@ -92,11 +90,12 @@ app.get("/api/users/:_id/logs", (req, res) => {
     log = log.slice(0, parseInt(limit));
   }
 
-  // Pastikan output hanya mengandung properti yang dibutuhkan
+  // PENTING: Pastikan setiap object di log array memiliki date sebagai string dengan format toDateString()
   const cleanLog = log.map((ex) => ({
     description: ex.description,
     duration: ex.duration,
-    date: ex.date, // Sudah dalam format toDateString()
+    date:
+      typeof ex.date === "string" ? ex.date : new Date(ex.date).toDateString(),
   }));
 
   res.json({
